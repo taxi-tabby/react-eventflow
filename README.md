@@ -2,6 +2,37 @@
 
 A React-based event tracking library that collects user interactions using the Provider pattern and sends them to your backend.
 
+```
+2025년에도 여전히 웹의 황제 자리를 꽉 잡고 있는 React.
+여기 소개할 방법은 React에서 구현할 수 있는 가장 심플하고 매력적인 사용자 추적 방식입니다.
+
+사실 통계나 추적이라는 게 기술적으로 100% 정확할 수는 없어요. 우회 방법이 넘쳐나거든요.
+뭐, 인터넷 실명제를 할 것도 아니고 당신의 집에 글로벌 라우터가 있는 것도 아니시겠죠
+그냥 빨리 포기하고 현실적인 방법을 찾는 게 속 편합니다.
+
+제가 개발하면서 느낀 “진짜 필요한 정보”는 딱 이 정도였습니다:
+- 어디서 들어왔는지
+- 지금 어디를 보고 있는지
+- 어디로 이동하려 하는지
+- 클릭 여부 + 클릭 위치
+- 스크롤 여부 + 스크롤 위치
+- 마우스가 어디서 어디로 이동했는지
+- 좌클릭/우클릭/휠 클릭 여부
+- 어딜 보고 있는가 (화면 스크린샷 정보 개발 예정)
+- 그리고 가장 중요한 것: 사용자가 누군지는 몰라도, 모든 행동이 한 사용자에게 연결되고 있는가
+
+말했듯 완벽하게 정확할 순 없지만, 사용자 행동의 흐름을 이어주는 것까지는 충분히 가능합니다.
+그래서 이벤트 발생 시간과 함께 ‘나름~ 고유한 지문 데이터’를 제공하는 방식으로 정리했습니다.
+
+물론 더 깊게 추적할 수도 있겠지만, 굳이 무거울 필요는 없죠. ip 찾고 dns 조회하고 트래킹하고 국가 위치니 어쩌니 찾고 어휴 무거워.. 
+단순하게 여기서 수집한 핵심 데이터만 백엔드로 툭 던져줍시다 
+거기서 알아서 잘 처리하겠죠 뭐. 우리는 필요한 건 이미 넘겼으니까요.
+
+로그인 사용자나 더욱 개인을 특정하고자 한다면 onEvent 에서 값 얻어 불러와서 쏴주면 되고 쉽다 쉬워
+굳이 무겁게 하려면 백엔드 서버에서 알아서 하시길 권장! 
+- 
+```
+
 ## Features
 
 - ✅ Built on React Provider pattern
@@ -301,6 +332,51 @@ This fingerprint is:
 - Persistent across sessions
 - Privacy-friendly (no personal data)
 
+
+## Eaxample
+`next.js`
+```javascript
+'use client';
+
+import { EventFlowProvider as BaseEventFlowProvider } from '@taxi_tabby/react-eventflow';
+import { ReactNode } from 'react';
+
+interface EventFlowWrapperProps {
+  children: ReactNode;
+}
+
+export function EventFlowProvider({ children }: EventFlowWrapperProps) {
+  return (
+    <BaseEventFlowProvider
+      config={{
+        trackPageViews: true,
+        trackNavigation: true,
+        trackReferral: true,
+        trackMouseClick: true,
+        trackMouseMoving: true,
+        trackScroll: true,
+
+        enableBatching: true,
+        batchInterval: 5000,
+        mouseMovingThrottle: 1000,
+        scrollThrottle: 1000,
+
+        debug: false,
+        onEvent: async (event) => {
+          if (Array.isArray(event)) {
+            // Handle array of events
+            console.log(JSON.stringify(event));
+          } else {
+            console.log(event.fingerprint, event.timestamp, event.type);
+          }
+        },
+      }}
+    >
+      {children}
+    </BaseEventFlowProvider>
+  );
+}
+```
 
 ## License
 
