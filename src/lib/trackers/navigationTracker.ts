@@ -10,6 +10,7 @@ export const createNavigationEvent = (
   return {
     type: 'navigation',
     timestamp: Date.now(),
+    fingerprint: '', // Provider에서 설정됨
     payload: {
       from,
       to,

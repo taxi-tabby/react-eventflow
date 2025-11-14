@@ -4,8 +4,10 @@ import { fingerprintService } from './fingerprintClass';
 import { EventBatcher } from './batching';
 import { 
   trackPageView as pageViewTracker,
-  trackCustomEvent as customEventTracker,
-  setupNavigationTracking 
+  setupNavigationTracking,
+  setupMouseMovingTracking,
+  setupMouseClickTracking,
+  setupScrollTracking
 } from './trackers';
 import { debugLog } from './utils';
 
@@ -66,25 +68,32 @@ export const EventFlowProvider = ({ config, children }: EventFlowProviderProps) 
 
   // 이벤트 전송 로직
   const sendEvent = (event: EventData) => {
-    debugLog(config.debug || false, 'Event:', event);
+    // fingerprint가 없으면 전송하지 않음
+    if (!fingerPrintValueRef.current) {
+      debugLog(config.debug || false, 'Event skipped: fingerprint not ready');
+      return;
+    }
+
+    // fingerprint 추가
+    const eventWithFingerprint: EventData = {
+      ...event,
+      fingerprint: fingerPrintValueRef.current,
+    };
+
+    debugLog(config.debug || false, 'Event:', eventWithFingerprint);
 
     // 배칭이 활성화된 경우
     if (config.enableBatching && eventBatcherRef.current) {
-      eventBatcherRef.current.addEvent(event);
+      eventBatcherRef.current.addEvent(eventWithFingerprint);
     } else {
       // 즉시 전송
-      config.onEvent(event);
+      config.onEvent(eventWithFingerprint);
     }
   };
 
   // 페이지뷰 추적
   const trackPageView = (url?: string, title?: string) => {
     pageViewTracker(sendEvent, url, title);
-  };
-
-  // 커스텀 이벤트 추적
-  const trackEvent = (type: string, payload?: Record<string, any>) => {
-    customEventTracker(sendEvent, type, payload);
   };
 
   // 초기 페이지뷰 추적 (컴포넌트 마운트 시)
@@ -113,7 +122,6 @@ export const EventFlowProvider = ({ config, children }: EventFlowProviderProps) 
 
   const contextValue: EventFlowContextValue = {
     config,
-    trackEvent,
     trackPageView,
   };
 

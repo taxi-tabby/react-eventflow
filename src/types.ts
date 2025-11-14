@@ -6,6 +6,8 @@ export interface EventData {
   type: string;
   /** 타임스탬프 */
   timestamp: number;
+  /** 사용자 식별 fingerprint */
+  fingerprint: string;
   /** 이벤트 추가 데이터 */
   payload?: Record<string, any>;
 }
@@ -41,11 +43,58 @@ export interface NavigationEvent extends EventData {
 }
 
 /**
- * 커스텀 이벤트 데이터
+ * 마우스 이동 이벤트 데이터
  */
-export interface CustomEvent extends EventData {
-  type: 'custom' | 'mouse-moving' | 'mouse-click' | 'pageview' | 'navigation' | 'scroll';
-  payload: Record<string, any>;
+export interface MouseMovingEvent extends EventData {
+  type: 'mouse-moving';
+  payload: {
+    /** X 좌표 */
+    x: number;
+    /** Y 좌표 */
+    y: number;
+    /** 페이지 내 X 좌표 */
+    pageX?: number;
+    /** 페이지 내 Y 좌표 */
+    pageY?: number;
+  };
+}
+
+/**
+ * 마우스 클릭 이벤트 데이터
+ */
+export interface MouseClickEvent extends EventData {
+  type: 'mouse-click';
+  payload: {
+    /** X 좌표 */
+    x: number;
+    /** Y 좌표 */
+    y: number;
+    /** 클릭한 요소의 태그명 */
+    target?: string;
+    /** 클릭한 요소의 클래스 */
+    targetClass?: string;
+    /** 클릭한 요소의 ID */
+    targetId?: string;
+    /** 버튼 종류 (0: 왼쪽, 1: 휠, 2: 오른쪽) */
+    button?: number;
+  };
+}
+
+/**
+ * 스크롤 이벤트 데이터
+ */
+export interface ScrollEvent extends EventData {
+  type: 'scroll';
+  payload: {
+    /** 세로 스크롤 위치 */
+    scrollY: number;
+    /** 가로 스크롤 위치 */
+    scrollX: number;
+    /** 스크롤 깊이 (%) */
+    scrollDepth?: number;
+    /** 문서 전체 높이 */
+    documentHeight?: number;
+  };
 }
 
 /**
@@ -82,9 +131,6 @@ export interface EventFlowConfig {
 export interface EventFlowContextValue {
   /** 설정 */
   config: EventFlowConfig;
-  
-  /** 커스텀 이벤트 전송 */
-  trackEvent: (type: string, payload?: Record<string, any>) => void;
   
   /** 페이지뷰 수동 전송 */
   trackPageView: (url?: string, title?: string) => void;

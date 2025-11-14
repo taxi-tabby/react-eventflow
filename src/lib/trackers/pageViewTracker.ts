@@ -10,6 +10,7 @@ export const createPageViewEvent = (
   return {
     type: 'pageview',
     timestamp: Date.now(),
+    fingerprint: '', // Provider에서 설정됨
     payload: {
       url: url || window.location.href,
       title: title || document.title,
