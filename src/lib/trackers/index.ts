@@ -7,3 +7,4 @@ export * from './navigationTracker';
 export * from './mouseMovingTracker';
 export * from './mouseClickTracker';
 export * from './scrollTracker';
+export * from './referralTracker';

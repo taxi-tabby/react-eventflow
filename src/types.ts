@@ -98,6 +98,47 @@ export interface ScrollEvent extends EventData {
 }
 
 /**
+ * 유입 경로 추적 이벤트 데이터
+ */
+export interface ReferralEvent extends EventData {
+  type: 'referral';
+  payload: {
+    /** 현재 페이지 URL */
+    currentUrl: string;
+    /** Referrer URL (어디서 왔는지) */
+    referrer: string;
+    /** Referrer 도메인 */
+    referrerDomain?: string;
+    /** 유입 소스 타입 (direct, external, internal, social, search, etc.) */
+    sourceType: 'direct' | 'external' | 'internal' | 'social' | 'search' | 'email' | 'unknown';
+    /** UTM 파라미터들 */
+    utm?: {
+      /** 캠페인 소스 (예: google, newsletter) */
+      source?: string;
+      /** 캠페인 매체 (예: cpc, banner, email) */
+      medium?: string;
+      /** 캠페인 이름 */
+      campaign?: string;
+      /** 캠페인 용어 (유료 검색 키워드) */
+      term?: string;
+      /** 캠페인 콘텐츠 (A/B 테스트용) */
+      content?: string;
+    };
+    /** 모든 URL 파라미터 */
+    queryParams?: Record<string, string>;
+    /** 브라우저 히스토리 정보 */
+    navigation?: {
+      /** 히스토리 엔트리 개수 */
+      historyLength: number;
+      /** 뒤로가기로 접근했는지 여부 */
+      isBackNavigation: boolean;
+      /** 네비게이션 타입 */
+      navigationType?: string;
+    };
+  };
+}
+
+/**
  * 이벤트 전송 콜백 함수
  */
 export type EventCallback = (event: EventData | EventData[]) => void | Promise<void>;
@@ -114,6 +155,9 @@ export interface EventFlowConfig {
   
   /** 네비게이션 자동 추적 활성화 (기본: true) */
   trackNavigation?: boolean;
+  
+  /** 유입 경로 자동 추적 활성화 (기본: true) */
+  trackReferral?: boolean;
   
   /** 디버그 모드 (기본: false) */
   debug?: boolean;

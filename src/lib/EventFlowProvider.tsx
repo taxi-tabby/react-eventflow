@@ -7,7 +7,8 @@ import {
   setupNavigationTracking,
   setupMouseMovingTracking,
   setupMouseClickTracking,
-  setupScrollTracking
+  setupScrollTracking,
+  trackReferral
 } from './trackers';
 import { debugLog } from './utils';
 
@@ -103,6 +104,14 @@ export const EventFlowProvider = ({ config, children }: EventFlowProviderProps) 
       debugLog(config.debug || false, 'Initial pageview tracked');
     }
   }, [config.trackPageViews, config.debug]);
+
+  // 유입 경로 추적 (최초 마운트 시 한 번만)
+  useEffect(() => {
+    if (config.trackReferral !== false) {
+      trackReferral(sendEvent);
+      debugLog(config.debug || false, 'Referral tracked');
+    }
+  }, [config.trackReferral, config.debug]);
 
   // 네비게이션 추적 (URL 변경 감지)
   useEffect(() => {
