@@ -51,6 +51,10 @@ function App() {
         },
         trackPageViews: true,
         trackNavigation: true,
+        trackReferral: true,
+        trackMouseClick: true,     // Enable click tracking
+        trackMouseMoving: false,   // Enable mouse movement tracking (can be noisy)
+        trackScroll: true,         // Enable scroll tracking
         debug: process.env.NODE_ENV === 'development',
       }}
     >
@@ -93,6 +97,21 @@ interface EventFlowConfig {
   
   /** Enable automatic referral tracking (default: true) */
   trackReferral?: boolean;
+  
+  /** Enable automatic mouse click tracking (default: false) */
+  trackMouseClick?: boolean;
+  
+  /** Enable automatic mouse moving tracking (default: false) */
+  trackMouseMoving?: boolean;
+  
+  /** Mouse moving throttle interval in ms (default: 100) */
+  mouseMovingThrottle?: number;
+  
+  /** Enable automatic scroll tracking (default: false) */
+  trackScroll?: boolean;
+  
+  /** Scroll throttle interval in ms (default: 200) */
+  scrollThrottle?: number;
   
   /** Debug mode (default: false) */
   debug?: boolean;
@@ -233,6 +252,37 @@ Enable batching to reduce network requests:
   <App />
 </EventFlowProvider>
 ```
+
+### Interaction Tracking
+
+Enable different types of user interaction tracking:
+
+```tsx
+<EventFlowProvider
+  config={{
+    onEvent: handleEvents,
+    // Basic tracking (enabled by default)
+    trackPageViews: true,
+    trackNavigation: true,
+    trackReferral: true,
+    
+    // Interaction tracking (disabled by default)
+    trackMouseClick: true,        // Track all click events
+    trackMouseMoving: true,       // Track mouse movements (can generate many events)
+    mouseMovingThrottle: 100,     // Send mouse move event every 100ms
+    trackScroll: true,            // Track scroll depth
+    scrollThrottle: 200,          // Send scroll event every 200ms
+  }}
+>
+  <App />
+</EventFlowProvider>
+```
+
+**Note on Performance:**
+- Mouse moving tracking can generate a lot of events. Use `mouseMovingThrottle` to control frequency.
+- Scroll tracking only sends events when scroll depth increases.
+- All trackers use `passive` event listeners to avoid blocking the main thread.
+- Error handling prevents conflicts with other libraries.
 
 ### User Identification
 

@@ -159,6 +159,21 @@ export interface EventFlowConfig {
   /** 유입 경로 자동 추적 활성화 (기본: true) */
   trackReferral?: boolean;
   
+  /** 마우스 클릭 자동 추적 활성화 (기본: false) */
+  trackMouseClick?: boolean;
+  
+  /** 마우스 이동 자동 추적 활성화 (기본: false) */
+  trackMouseMoving?: boolean;
+  
+  /** 마우스 이동 쓰로틀링 간격(ms) (기본: 100) */
+  mouseMovingThrottle?: number;
+  
+  /** 스크롤 자동 추적 활성화 (기본: false) */
+  trackScroll?: boolean;
+  
+  /** 스크롤 쓰로틀링 간격(ms) (기본: 200) */
+  scrollThrottle?: number;
+  
   /** 디버그 모드 (기본: false) */
   debug?: boolean;
   

@@ -38,24 +38,30 @@ export const setupMouseClickTracking = (
   }
 
   const handleClick = (e: MouseEvent) => {
-    const target = e.target as HTMLElement;
-    
-    const event = createMouseClickEvent(
-      e.clientX,
-      e.clientY,
-      target.tagName?.toLowerCase(),
-      target.className,
-      target.id,
-      e.button
-    );
-    
-    sendEvent(event);
+    try {
+      const target = e.target as HTMLElement;
+      
+      const event = createMouseClickEvent(
+        e.clientX,
+        e.clientY,
+        target.tagName?.toLowerCase(),
+        target.className,
+        target.id,
+        e.button
+      );
+      
+      sendEvent(event);
+    } catch (error) {
+      // 에러 발생 시 조용히 무시 (다른 라이브러리 충돌 방지)
+      console.warn('[EventFlow] Mouse click tracking error:', error);
+    }
   };
 
-  window.addEventListener('click', handleClick);
+  // passive: false, capture: true로 설정하여 다른 핸들러와 충돌 방지
+  window.addEventListener('click', handleClick, { capture: true, passive: true });
 
   // Cleanup 함수 반환
   return () => {
-    window.removeEventListener('click', handleClick);
+    window.removeEventListener('click', handleClick, { capture: true } as EventListenerOptions);
   };
 };

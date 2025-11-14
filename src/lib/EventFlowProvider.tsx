@@ -129,6 +129,50 @@ export const EventFlowProvider = ({ config, children }: EventFlowProviderProps) 
     return cleanup;
   }, [config.trackNavigation, config.debug]);
 
+  // 마우스 클릭 추적
+  useEffect(() => {
+    if (config.trackMouseClick !== true) {
+      return;
+    }
+
+    const cleanup = setupMouseClickTracking(sendEvent, true);
+    debugLog(config.debug || false, 'Mouse click tracking initialized');
+
+    return cleanup;
+  }, [config.trackMouseClick, config.debug]);
+
+  // 마우스 이동 추적
+  useEffect(() => {
+    if (config.trackMouseMoving !== true) {
+      return;
+    }
+
+    const cleanup = setupMouseMovingTracking(
+      sendEvent,
+      true,
+      config.mouseMovingThrottle || 100
+    );
+    debugLog(config.debug || false, 'Mouse moving tracking initialized');
+
+    return cleanup;
+  }, [config.trackMouseMoving, config.mouseMovingThrottle, config.debug]);
+
+  // 스크롤 추적
+  useEffect(() => {
+    if (config.trackScroll !== true) {
+      return;
+    }
+
+    const cleanup = setupScrollTracking(
+      sendEvent,
+      true,
+      config.scrollThrottle || 200
+    );
+    debugLog(config.debug || false, 'Scroll tracking initialized');
+
+    return cleanup;
+  }, [config.trackScroll, config.scrollThrottle, config.debug]);
+
   const contextValue: EventFlowContextValue = {
     config,
     trackPageView,

@@ -37,26 +37,32 @@ export const setupMouseMovingTracking = (
   let lastSendTime = 0;
 
   const handleMouseMove = (e: MouseEvent) => {
-    const now = Date.now();
-    
-    // 쓰로틀링: throttleMs 간격으로만 이벤트 전송
-    if (now - lastSendTime < throttleMs) {
-      return;
-    }
+    try {
+      const now = Date.now();
+      
+      // 쓰로틀링: throttleMs 간격으로만 이벤트 전송
+      if (now - lastSendTime < throttleMs) {
+        return;
+      }
 
-    lastSendTime = now;
-    
-    const event = createMouseMovingEvent(
-      e.clientX,
-      e.clientY,
-      e.pageX,
-      e.pageY
-    );
-    
-    sendEvent(event);
+      lastSendTime = now;
+      
+      const event = createMouseMovingEvent(
+        e.clientX,
+        e.clientY,
+        e.pageX,
+        e.pageY
+      );
+      
+      sendEvent(event);
+    } catch (error) {
+      // 에러 발생 시 조용히 무시 (다른 라이브러리 충돌 방지)
+      console.warn('[EventFlow] Mouse moving tracking error:', error);
+    }
   };
 
-  window.addEventListener('mousemove', handleMouseMove);
+  // passive: true로 설정하여 성능 향상 및 충돌 방지
+  window.addEventListener('mousemove', handleMouseMove, { passive: true });
 
   // Cleanup 함수 반환
   return () => {
