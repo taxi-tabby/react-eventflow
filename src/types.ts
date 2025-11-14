@@ -51,7 +51,7 @@ export interface CustomEvent extends EventData {
 /**
  * 이벤트 전송 콜백 함수
  */
-export type EventCallback = (event: EventData) => void | Promise<void>;
+export type EventCallback = (event: EventData | EventData[]) => void | Promise<void>;
 
 /**
  * EventFlow 설정 옵션

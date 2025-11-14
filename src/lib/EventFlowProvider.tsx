@@ -22,12 +22,38 @@ export interface EventFlowProviderProps {
  */
 export const EventFlowProvider = ({ config, children }: EventFlowProviderProps) => {
 
+  // ✅ 마운트 시 한 번만 생성, 이후 유지됨
+  const fingerPrintValueRef = useRef<string | null>(null);
 
 
   const eventQueueRef = useRef<EventData[]>([]);
   const batchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // TODO: 이벤트 전송 로직 구현
+  // Fingerprint 초기화
+  useEffect(() => {
+    const initFingerprint = async () => {
+      fingerPrintValueRef.current = await fingerprintService.getFingerprint();
+    };
+    initFingerprint();
+  }, []);
+
+  
+  // 배칭된 이벤트 일괄 전송
+  const flushEvents = () => {
+    if (eventQueueRef.current.length === 0) return;
+
+    const eventsToSend = [...eventQueueRef.current];
+    eventQueueRef.current = [];
+
+    if (config.debug) {
+      console.log('[EventFlow] Flushing batch:', eventsToSend.length, 'events');
+    }
+
+    // 배칭된 이벤트 전송
+    config.onEvent(eventsToSend);
+  };
+
+  // 이벤트 전송 로직
   const sendEvent = (event: EventData) => {
     if (config.debug) {
       console.log('[EventFlow]', event);
@@ -35,8 +61,18 @@ export const EventFlowProvider = ({ config, children }: EventFlowProviderProps) 
 
     // 배칭이 활성화된 경우
     if (config.enableBatching) {
-      // TODO: 배칭 로직 구현
       eventQueueRef.current.push(event);
+
+      // 기존 타이머가 있으면 취소
+      if (batchTimerRef.current) {
+        clearTimeout(batchTimerRef.current);
+      }
+
+      // 새 타이머 설정 (기본 2초 후 전송)
+      const batchInterval = config.batchInterval || 2000;
+      batchTimerRef.current = setTimeout(() => {
+        flushEvents();
+      }, batchInterval);
     } else {
       // 즉시 전송
       config.onEvent(event);
