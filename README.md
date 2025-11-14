@@ -1,44 +1,51 @@
-# react-eventflow
+# @taxi_tabby/react-eventflow
 
-React 기반 이벤트 추적 라이브러리 - Provider 패턴으로 사용자 인터랙션을 수집하고 백엔드로 전송합니다.
+A React-based event tracking library that collects user interactions using the Provider pattern and sends them to your backend.
 
-## 특징
+## Features
 
-- ✅ React Provider 패턴 기반
-- ✅ TypeScript 완전 지원
-- ✅ 페이지뷰 자동 추적
-- ✅ 네비게이션 자동 추적
-- ✅ 커스텀 이벤트 추적
-- ✅ 이벤트 배칭 지원
-- ✅ Zero dependencies (React만 필요)
+- ✅ Built on React Provider pattern
+- ✅ Full TypeScript support
+- ✅ Automatic pageview tracking
+- ✅ Automatic navigation tracking
+- ✅ Mouse movement and click tracking
+- ✅ Scroll tracking
+- ✅ Event batching support
+- ✅ Browser fingerprinting for user identification
+- ✅ Lightweight with minimal dependencies
 
-## 설치
-
-```bash
-npm install react-eventflow
-```
-
-또는
+## Installation
 
 ```bash
-yarn add react-eventflow
+npm install @taxi_tabby/react-eventflow
 ```
 
-## 기본 사용법
+or
 
-### 1. Provider 설정
+```bash
+yarn add @taxi_tabby/react-eventflow
+```
 
-앱의 최상위에 `EventFlowProvider`를 추가합니다:
+## Basic Usage
+
+### 1. Setup Provider
+
+Add `EventFlowProvider` at the root of your app:
 
 ```tsx
-import { EventFlowProvider } from 'react-eventflow';
+import { EventFlowProvider } from '@taxi_tabby/react-eventflow';
 
 function App() {
   return (
     <EventFlowProvider
       config={{
         onEvent: async (event) => {
-          ...
+          // Send event to your backend
+          await fetch('/api/events', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(event),
+          });
         },
         trackPageViews: true,
         trackNavigation: true,
@@ -51,38 +58,12 @@ function App() {
 }
 ```
 
-### 2. 커스텀 이벤트 추적
+### 2. Manual Page View Tracking
 
-컴포넌트 내에서 `useEventFlow` 훅을 사용합니다:
-
-```tsx
-import { useEventFlow } from 'react-eventflow';
-
-function ProductCard({ productId }: { productId: string }) {
-  const { trackEvent } = useEventFlow();
-
-  const handleAddToCart = () => {
-    trackEvent('add_to_cart', {
-      productId,
-      timestamp: Date.now(),
-      source: 'product_card',
-    });
-    
-    // 실제 장바구니 로직...
-  };
-
-  return (
-    <button onClick={handleAddToCart}>
-      장바구니에 추가
-    </button>
-  );
-}
-```
-
-### 3. 페이지뷰 수동 추적
+Use the `useEventFlow` hook in your components:
 
 ```tsx
-import { useEventFlow } from 'react-eventflow';
+import { useEventFlow } from '@taxi_tabby/react-eventflow';
 
 function CustomPage() {
   const { trackPageView } = useEventFlow();
@@ -95,37 +76,40 @@ function CustomPage() {
 }
 ```
 
-## 설정 옵션
+## Configuration Options
 
 ```typescript
 interface EventFlowConfig {
-  /** 이벤트 전송 콜백 함수 (필수) */
-  onEvent: (event: EventData) => void | Promise<void>;
+  /** Event callback function (required) */
+  onEvent: (event: EventData | EventData[]) => void | Promise<void>;
   
-  /** 페이지뷰 자동 추적 (기본: true) */
+  /** Enable automatic pageview tracking (default: true) */
   trackPageViews?: boolean;
   
-  /** 네비게이션 자동 추적 (기본: true) */
+  /** Enable automatic navigation tracking (default: true) */
   trackNavigation?: boolean;
   
-  /** 디버그 모드 (기본: false) */
+  /** Debug mode (default: false) */
   debug?: boolean;
   
-  /** 이벤트 배칭 활성화 (기본: false) */
+  /** Enable event batching (default: false) */
   enableBatching?: boolean;
   
-  /** 배칭 간격(ms) (기본: 1000) */
+  /** Batching interval in ms (default: 2000) */
   batchInterval?: number;
 }
 ```
 
-## 이벤트 타입
+## Event Types
+
+All events include a `fingerprint` field for unique user identification.
 
 ### PageViewEvent
 ```typescript
 {
   type: 'pageview',
   timestamp: 1699999999999,
+  fingerprint: 'unique-browser-id',
   payload: {
     url: '/products',
     title: 'Products Page',
@@ -140,6 +124,7 @@ interface EventFlowConfig {
 {
   type: 'navigation',
   timestamp: 1699999999999,
+  fingerprint: 'unique-browser-id',
   payload: {
     from: '/home',
     to: '/products'
@@ -147,33 +132,93 @@ interface EventFlowConfig {
 }
 ```
 
-### CustomEvent
+### MouseMovingEvent
 ```typescript
 {
-  type: 'custom',
+  type: 'mouse-moving',
   timestamp: 1699999999999,
+  fingerprint: 'unique-browser-id',
   payload: {
-    // 사용자 정의 데이터
+    x: 100,
+    y: 200,
+    pageX: 100,
+    pageY: 500
   }
 }
 ```
 
-## 개발 가이드
+### MouseClickEvent
+```typescript
+{
+  type: 'mouse-click',
+  timestamp: 1699999999999,
+  fingerprint: 'unique-browser-id',
+  payload: {
+    x: 100,
+    y: 200,
+    target: 'button',
+    targetClass: 'btn-primary',
+    targetId: 'submit-btn',
+    button: 0
+  }
+}
+```
 
-### TODO: 구현 필요 사항
+### ScrollEvent
+```typescript
+{
+  type: 'scroll',
+  timestamp: 1699999999999,
+  fingerprint: 'unique-browser-id',
+  payload: {
+    scrollY: 500,
+    scrollX: 0,
+    scrollDepth: 25,
+    documentHeight: 2000
+  }
+}
+```
 
-`src/lib/EventFlowProvider.tsx` 파일에는 다음 기능들이 TODO로 표시되어 있습니다:
+## Advanced Features
 
-1. **이벤트 배칭 로직** - `enableBatching`이 true일 때 이벤트를 큐에 모았다가 일괄 전송
-2. **페이지뷰 추적** - `trackPageView` 함수 구현
-3. **커스텀 이벤트 추적** - `trackEvent` 함수 구현
-4. **초기 페이지뷰 추적** - 컴포넌트 마운트 시 자동 추적
-5. **네비게이션 추적** - URL 변경 감지 및 이벤트 전송
+### Event Batching
 
-## 라이선스
+Enable batching to reduce network requests:
+
+```tsx
+<EventFlowProvider
+  config={{
+    onEvent: handleEvents,
+    enableBatching: true,
+    batchInterval: 5000, // Send every 5 seconds
+  }}
+>
+  <App />
+</EventFlowProvider>
+```
+
+### User Identification
+
+Every event automatically includes a browser fingerprint for user identification:
+
+```typescript
+{
+  fingerprint: 'abc123def456', // Unique per browser
+  type: 'pageview',
+  // ...
+}
+```
+
+This fingerprint is:
+- Generated using browser characteristics
+- Persistent across sessions
+- Privacy-friendly (no personal data)
+
+
+## License
 
 MIT
 
-## 기여
+## Contributing
 
-이슈와 PR은 언제나 환영입니다!
+Issues and PRs are always welcome!
