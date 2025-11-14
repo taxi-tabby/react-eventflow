@@ -2,6 +2,7 @@
 
 A React-based event tracking library that collects user interactions using the Provider pattern and sends them to your backend.
 
+
 ```
 2025년에도 여전히 웹의 황제 자리를 꽉 잡고 있는 React.
 여기 소개할 방법은 React에서 구현할 수 있는 가장 심플하고 매력적인 사용자 추적 방식입니다.
