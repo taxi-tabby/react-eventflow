@@ -38,12 +38,7 @@ function App() {
     <EventFlowProvider
       config={{
         onEvent: async (event) => {
-          // 백엔드로 이벤트 전송
-          await fetch('/api/analytics', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(event),
-          });
+          ...
         },
         trackPageViews: true,
         trackNavigation: true,

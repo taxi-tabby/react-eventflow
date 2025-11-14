@@ -44,7 +44,7 @@ export interface NavigationEvent extends EventData {
  * 커스텀 이벤트 데이터
  */
 export interface CustomEvent extends EventData {
-  type: 'custom';
+  type: 'custom' | 'mouse-moving' | 'mouse-click' | 'pageview' | 'navigation' | 'scroll';
   payload: Record<string, any>;
 }
 

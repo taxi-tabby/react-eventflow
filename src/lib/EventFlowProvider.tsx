@@ -1,5 +1,6 @@
 import React, { createContext, useEffect, useRef, ReactNode } from 'react';
 import type { EventFlowConfig, EventFlowContextValue, EventData } from '../types';
+import { fingerprintService } from './fingerprintClass'
 
 /**
  * EventFlow Context
@@ -18,25 +19,11 @@ export interface EventFlowProviderProps {
 
 /**
  * EventFlowProvider - 이벤트 추적 Provider 컴포넌트
- * 
- * @example
- * ```tsx
- * <EventFlowProvider config={{
- *   onEvent: (event) => {
- *     // 백엔드로 이벤트 전송
- *     fetch('/api/events', {
- *       method: 'POST',
- *       body: JSON.stringify(event)
- *     });
- *   },
- *   trackPageViews: true,
- *   trackNavigation: true
- * }}>
- *   <App />
- * </EventFlowProvider>
- * ```
  */
 export const EventFlowProvider = ({ config, children }: EventFlowProviderProps) => {
+
+
+
   const eventQueueRef = useRef<EventData[]>([]);
   const batchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
