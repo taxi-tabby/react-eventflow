@@ -1,4 +1,4 @@
-// Main exports
+// Main exports - Provider and Hooks
 export { EventFlowProvider } from './lib/EventFlowProvider';
 export { useEventFlow } from './lib/useEventFlow';
 

@@ -1,6 +1,13 @@
 import React, { createContext, useEffect, useRef, ReactNode } from 'react';
 import type { EventFlowConfig, EventFlowContextValue, EventData } from '../types';
-import { fingerprintService } from './fingerprintClass'
+import { fingerprintService } from './fingerprintClass';
+import { EventBatcher } from './batching';
+import { 
+  trackPageView as pageViewTracker,
+  trackCustomEvent as customEventTracker,
+  setupNavigationTracking 
+} from './trackers';
+import { debugLog } from './utils';
 
 /**
  * EventFlow Context
@@ -22,91 +29,87 @@ export interface EventFlowProviderProps {
  */
 export const EventFlowProvider = ({ config, children }: EventFlowProviderProps) => {
 
-  // ✅ 마운트 시 한 번만 생성, 이후 유지됨
+  // Fingerprint 값 저장
   const fingerPrintValueRef = useRef<string | null>(null);
-
-
-  const eventQueueRef = useRef<EventData[]>([]);
-  const batchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  
+  // EventBatcher 인스턴스
+  const eventBatcherRef = useRef<EventBatcher | null>(null);
 
   // Fingerprint 초기화
   useEffect(() => {
     const initFingerprint = async () => {
       fingerPrintValueRef.current = await fingerprintService.getFingerprint();
+      debugLog(config.debug || false, 'Fingerprint initialized:', fingerPrintValueRef.current);
     };
     initFingerprint();
-  }, []);
+  }, [config.debug]);
 
-  
-  // 배칭된 이벤트 일괄 전송
-  const flushEvents = () => {
-    if (eventQueueRef.current.length === 0) return;
+  // EventBatcher 초기화
+  useEffect(() => {
+    if (config.enableBatching) {
+      eventBatcherRef.current = new EventBatcher(
+        config.onEvent,
+        config.batchInterval || 2000,
+        config.debug || false
+      );
 
-    const eventsToSend = [...eventQueueRef.current];
-    eventQueueRef.current = [];
-
-    if (config.debug) {
-      console.log('[EventFlow] Flushing batch:', eventsToSend.length, 'events');
+      debugLog(config.debug || false, 'EventBatcher initialized');
     }
 
-    // 배칭된 이벤트 전송
-    config.onEvent(eventsToSend);
-  };
+    return () => {
+      if (eventBatcherRef.current) {
+        eventBatcherRef.current.flush();
+        eventBatcherRef.current.clear();
+      }
+    };
+  }, [config.enableBatching, config.batchInterval, config.onEvent, config.debug]);
 
   // 이벤트 전송 로직
   const sendEvent = (event: EventData) => {
-    if (config.debug) {
-      console.log('[EventFlow]', event);
-    }
+    debugLog(config.debug || false, 'Event:', event);
 
     // 배칭이 활성화된 경우
-    if (config.enableBatching) {
-      eventQueueRef.current.push(event);
-
-      // 기존 타이머가 있으면 취소
-      if (batchTimerRef.current) {
-        clearTimeout(batchTimerRef.current);
-      }
-
-      // 새 타이머 설정 (기본 2초 후 전송)
-      const batchInterval = config.batchInterval || 2000;
-      batchTimerRef.current = setTimeout(() => {
-        flushEvents();
-      }, batchInterval);
+    if (config.enableBatching && eventBatcherRef.current) {
+      eventBatcherRef.current.addEvent(event);
     } else {
       // 즉시 전송
       config.onEvent(event);
     }
   };
 
-  // TODO: 페이지뷰 추적
+  // 페이지뷰 추적
   const trackPageView = (url?: string, title?: string) => {
-    // TODO: 구현 필요
+    pageViewTracker(sendEvent, url, title);
   };
 
-  // TODO: 커스텀 이벤트 추적
+  // 커스텀 이벤트 추적
   const trackEvent = (type: string, payload?: Record<string, any>) => {
-    // TODO: 구현 필요
+    customEventTracker(sendEvent, type, payload);
   };
 
-  // TODO: 초기 페이지뷰 추적 (컴포넌트 마운트 시)
+  // 초기 페이지뷰 추적 (컴포넌트 마운트 시)
   useEffect(() => {
-    // TODO: 구현 필요
-  }, []);
+    if (config.trackPageViews !== false) {
+      trackPageView();
+      debugLog(config.debug || false, 'Initial pageview tracked');
+    }
+  }, [config.trackPageViews, config.debug]);
 
-  // TODO: 네비게이션 추적 (URL 변경 감지)
+  // 네비게이션 추적 (URL 변경 감지)
   useEffect(() => {
-    // TODO: 구현 필요
-  }, []);
+    if (config.trackNavigation === false) {
+      return;
+    }
 
-  // TODO: 배칭 타이머 정리
-  useEffect(() => {
-    return () => {
-      if (batchTimerRef.current) {
-        clearTimeout(batchTimerRef.current);
-      }
-    };
-  }, []);
+    const cleanup = setupNavigationTracking(
+      sendEvent,
+      true
+    );
+
+    debugLog(config.debug || false, 'Navigation tracking initialized');
+
+    return cleanup;
+  }, [config.trackNavigation, config.debug]);
 
   const contextValue: EventFlowContextValue = {
     config,
