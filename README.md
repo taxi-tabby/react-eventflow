@@ -8,6 +8,8 @@ A React-based event tracking library that collects user interactions using the P
 - ✅ Full TypeScript support
 - ✅ Automatic pageview tracking
 - ✅ Automatic navigation tracking
+- ✅ Automatic referral/traffic source tracking
+- ✅ UTM parameter tracking for marketing campaigns
 - ✅ Mouse movement and click tracking
 - ✅ Scroll tracking
 - ✅ Event batching support
@@ -89,6 +91,9 @@ interface EventFlowConfig {
   /** Enable automatic navigation tracking (default: true) */
   trackNavigation?: boolean;
   
+  /** Enable automatic referral tracking (default: true) */
+  trackReferral?: boolean;
+  
   /** Debug mode (default: false) */
   debug?: boolean;
   
@@ -115,6 +120,38 @@ All events include a `fingerprint` field for unique user identification.
     title: 'Products Page',
     referrer: 'https://google.com',
     userAgent: 'Mozilla/5.0...'
+  }
+}
+```
+
+### ReferralEvent
+```typescript
+{
+  type: 'referral',
+  timestamp: 1699999999999,
+  fingerprint: 'unique-browser-id',
+  payload: {
+    currentUrl: 'https://example.com/products?utm_source=google',
+    referrer: 'https://google.com/search?q=products',
+    referrerDomain: 'google.com',
+    sourceType: 'search', // 'direct' | 'external' | 'internal' | 'social' | 'search' | 'email' | 'unknown'
+    utm: {
+      source: 'google',
+      medium: 'cpc',
+      campaign: 'summer_sale',
+      term: 'products',
+      content: 'ad_variant_a'
+    },
+    queryParams: {
+      utm_source: 'google',
+      utm_medium: 'cpc',
+      // ... all query parameters
+    },
+    navigation: {
+      historyLength: 5,
+      isBackNavigation: false,
+      navigationType: 'navigate'
+    }
   }
 }
 ```
