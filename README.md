@@ -30,7 +30,12 @@ A React-based event tracking library that collects user interactions using the P
 
 로그인 사용자나 더욱 개인을 특정하고자 한다면 onEvent 에서 값 얻어 불러와서 쏴주면 되고 쉽다 쉬워
 굳이 무겁게 하려면 백엔드 서버에서 알아서 하시길 권장! 
-- 
+
+
+* 주의 *
+trackReferral 기능은 불안정합니다! 잘 동작한다고 생각한다면 따봉
+
+
 ```
 
 ## Features
