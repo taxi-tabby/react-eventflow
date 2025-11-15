@@ -1,6 +1,6 @@
 {
   "name": "@taxi_tabby/react-eventflow",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "description": "React event tracking library with Provider pattern for collecting user interactions and sending to backend",
   "main": "dist/index.js",
   "module": "dist/index.esm.js",

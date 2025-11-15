@@ -276,7 +276,7 @@ All events include a `fingerprint` field for unique user identification.
 
 ### Event Batching
 
-Enable batching to reduce network requests:
+Enable batching to reduce network requests and payload size:
 
 ```tsx
 <EventFlowProvider
@@ -289,6 +289,34 @@ Enable batching to reduce network requests:
   <App />
 </EventFlowProvider>
 ```
+
+When batching is enabled, events are sent in this optimized format:
+
+```typescript
+// Batched events (fingerprint sent once for all events)
+{
+  fingerprint: 'abc123def456',
+  events: [
+    {
+      type: 'pageview',
+      timestamp: 1699999999999,
+      payload: { url: '/home', title: 'Home' }
+    },
+    {
+      type: 'mouse-click',
+      timestamp: 1699999999999,
+      payload: { x: 100, y: 200, target: 'button' }
+    },
+    {
+      type: 'scroll',
+      timestamp: 1700000000000,
+      payload: { scrollY: 500, scrollDepth: 25 }
+    }
+  ]
+}
+```
+
+This format significantly reduces payload size by including the `fingerprint` only once instead of with each event.
 
 ### Interaction Tracking
 
@@ -369,11 +397,24 @@ export function EventFlowProvider({ children }: EventFlowWrapperProps) {
 
         debug: false,
         onEvent: async (event) => {
-          if (Array.isArray(event)) {
-            // Handle array of events
-            console.log(JSON.stringify(event));
+          // Check if it's a batched event
+          if ('events' in event) {
+            // Batched events: { fingerprint: string, events: Array }
+            console.log('Batch received:', event.fingerprint, event.events.length, 'events');
+            // Send batched events to your backend
+            await fetch('/api/events/batch', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(event),
+            });
           } else {
-            console.log(event.fingerprint, event.timestamp, event.type);
+            // Single event: { fingerprint: string, type: string, timestamp: number, payload: any }
+            console.log('Single event:', event.fingerprint, event.type);
+            await fetch('/api/events', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(event),
+            });
           }
         },
       }}

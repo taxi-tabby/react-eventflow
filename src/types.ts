@@ -13,6 +13,28 @@ export interface EventData {
 }
 
 /**
+ * 배치 이벤트용 경량화된 이벤트 데이터 (fingerprint 제외)
+ */
+export interface BatchEventData {
+  /** 이벤트 타입 (pageview, click, navigation 등) */
+  type: string;
+  /** 타임스탬프 */
+  timestamp: number;
+  /** 이벤트 추가 데이터 */
+  payload?: Record<string, any>;
+}
+
+/**
+ * 배치로 전송되는 이벤트 묶음
+ */
+export interface BatchedEvents {
+  /** 사용자 식별 fingerprint (배치 전체에 공통) */
+  fingerprint: string;
+  /** 이벤트 배열 */
+  events: BatchEventData[];
+}
+
+/**
  * 페이지뷰 이벤트 데이터
  */
 export interface PageViewEvent extends EventData {
@@ -141,7 +163,7 @@ export interface ReferralEvent extends EventData {
 /**
  * 이벤트 전송 콜백 함수
  */
-export type EventCallback = (event: EventData | EventData[]) => void | Promise<void>;
+export type EventCallback = (event: EventData | BatchedEvents) => void | Promise<void>;
 
 /**
  * EventFlow 설정 옵션

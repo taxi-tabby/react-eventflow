@@ -5,11 +5,14 @@ export { useEventFlow } from './lib/useEventFlow';
 // Type exports
 export type {
   EventData,
+  BatchEventData,
+  BatchedEvents,
   PageViewEvent,
   NavigationEvent,
   MouseMovingEvent,
   MouseClickEvent,
   ScrollEvent,
+  ReferralEvent,
   EventCallback,
   EventFlowConfig,
   EventFlowContextValue,

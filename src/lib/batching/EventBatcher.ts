@@ -1,4 +1,4 @@
-import type { EventData, EventCallback } from '../../types';
+import type { EventData, EventCallback, BatchedEvents, BatchEventData } from '../../types';
 
 /**
  * 이벤트 배칭 관리 클래스
@@ -56,7 +56,20 @@ export class EventBatcher {
       console.log('[EventBatcher] Flushing batch:', eventsToSend.length, 'events');
     }
 
-    this.onFlush(eventsToSend);
+    // fingerprint를 한 번만 포함하는 배치 형식으로 변환
+    const fingerprint = eventsToSend[0]?.fingerprint || '';
+    const batchEvents: BatchEventData[] = eventsToSend.map(event => ({
+      type: event.type,
+      timestamp: event.timestamp,
+      payload: event.payload,
+    }));
+
+    const batchedEvents: BatchedEvents = {
+      fingerprint,
+      events: batchEvents,
+    };
+
+    this.onFlush(batchedEvents);
   }
 
   /**
