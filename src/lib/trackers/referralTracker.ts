@@ -158,8 +158,13 @@ const getNavigationType = (): string | undefined => {
  * 유입 경로 추적 이벤트 생성
  */
 export const createReferralEvent = (): ReferralEvent => {
+  // 브라우저 환경 체크
+  if (typeof window === 'undefined') {
+    throw new Error('Referral tracking is only available in browser environment');
+  }
+
   const currentUrl = window.location.href;
-  const referrer = document.referrer;
+  const referrer = typeof document !== 'undefined' ? document.referrer : '';
   const currentDomain = window.location.hostname;
   const referrerDomain = extractDomain(referrer);
   const queryParams = parseQueryParams(currentUrl);
@@ -180,7 +185,7 @@ export const createReferralEvent = (): ReferralEvent => {
       utm,
       queryParams: Object.keys(queryParams).length > 0 ? queryParams : undefined,
       navigation: {
-        historyLength: window.history.length,
+        historyLength: typeof window !== 'undefined' && window.history ? window.history.length : 0,
         isBackNavigation,
         navigationType,
       },
@@ -192,6 +197,10 @@ export const createReferralEvent = (): ReferralEvent => {
  * 유입 경로 추적 함수
  */
 export const trackReferral = (sendEvent: (event: ReferralEvent) => void) => {
-  const event = createReferralEvent();
-  sendEvent(event);
+  try {
+    const event = createReferralEvent();
+    sendEvent(event);
+  } catch (error) {
+    console.warn('[EventFlow] Referral tracking error:', error);
+  }
 };

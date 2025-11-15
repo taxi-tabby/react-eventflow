@@ -35,17 +35,48 @@ export const EventFlowProvider = ({ config, children }: EventFlowProviderProps) 
   // Fingerprint 값 저장
   const fingerPrintValueRef = useRef<string | null>(null);
   
+  // Fingerprint 준비 완료 여부
+  const fingerprintReadyRef = useRef<boolean>(false);
+  
+  // Fingerprint 대기 중인 이벤트 큐
+  const pendingEventsRef = useRef<EventData[]>([]);
+  
   // EventBatcher 인스턴스
   const eventBatcherRef = useRef<EventBatcher | null>(null);
 
   // Fingerprint 초기화
   useEffect(() => {
     const initFingerprint = async () => {
-      fingerPrintValueRef.current = await fingerprintService.getFingerprint();
-      debugLog(config.debug || false, 'Fingerprint initialized:', fingerPrintValueRef.current);
+      try {
+        fingerPrintValueRef.current = await fingerprintService.getFingerprint();
+        fingerprintReadyRef.current = true;
+        debugLog(config.debug || false, 'Fingerprint initialized:', fingerPrintValueRef.current);
+        
+        // 대기 중인 이벤트들 처리
+        if (pendingEventsRef.current.length > 0) {
+          debugLog(config.debug || false, 'Processing pending events:', pendingEventsRef.current.length);
+          
+          pendingEventsRef.current.forEach(event => {
+            const eventWithFingerprint: EventData = {
+              ...event,
+              fingerprint: fingerPrintValueRef.current!,
+            };
+            
+            if (config.enableBatching && eventBatcherRef.current) {
+              eventBatcherRef.current.addEvent(eventWithFingerprint);
+            } else {
+              config.onEvent(eventWithFingerprint);
+            }
+          });
+          
+          pendingEventsRef.current = [];
+        }
+      } catch (error) {
+        console.error('[EventFlow] Fingerprint initialization error:', error);
+      }
     };
     initFingerprint();
-  }, [config.debug]);
+  }, [config.debug, config.enableBatching, config.onEvent]);
 
   // EventBatcher 초기화
   useEffect(() => {
@@ -69,9 +100,10 @@ export const EventFlowProvider = ({ config, children }: EventFlowProviderProps) 
 
   // 이벤트 전송 로직
   const sendEvent = (event: EventData) => {
-    // fingerprint가 없으면 전송하지 않음
-    if (!fingerPrintValueRef.current) {
-      debugLog(config.debug || false, 'Event skipped: fingerprint not ready');
+    // fingerprint가 아직 준비되지 않았으면 큐에 추가
+    if (!fingerprintReadyRef.current || !fingerPrintValueRef.current) {
+      debugLog(config.debug || false, 'Event queued (fingerprint not ready):', event.type);
+      pendingEventsRef.current.push(event);
       return;
     }
 
@@ -99,6 +131,9 @@ export const EventFlowProvider = ({ config, children }: EventFlowProviderProps) 
 
   // 초기 페이지뷰 추적 (컴포넌트 마운트 시)
   useEffect(() => {
+    // 브라우저 환경에서만 실행
+    if (typeof window === 'undefined') return;
+    
     if (config.trackPageViews !== false) {
       trackPageView();
       debugLog(config.debug || false, 'Initial pageview tracked');
@@ -107,6 +142,9 @@ export const EventFlowProvider = ({ config, children }: EventFlowProviderProps) 
 
   // 유입 경로 추적 (최초 마운트 시 한 번만)
   useEffect(() => {
+    // 브라우저 환경에서만 실행
+    if (typeof window === 'undefined') return;
+    
     if (config.trackReferral !== false) {
       trackReferral(sendEvent);
       debugLog(config.debug || false, 'Referral tracked');
@@ -115,6 +153,9 @@ export const EventFlowProvider = ({ config, children }: EventFlowProviderProps) 
 
   // 네비게이션 추적 (URL 변경 감지)
   useEffect(() => {
+    // 브라우저 환경에서만 실행
+    if (typeof window === 'undefined') return;
+    
     if (config.trackNavigation === false) {
       return;
     }
@@ -131,6 +172,9 @@ export const EventFlowProvider = ({ config, children }: EventFlowProviderProps) 
 
   // 마우스 클릭 추적
   useEffect(() => {
+    // 브라우저 환경에서만 실행
+    if (typeof window === 'undefined') return;
+    
     if (config.trackMouseClick !== true) {
       return;
     }
@@ -143,6 +187,9 @@ export const EventFlowProvider = ({ config, children }: EventFlowProviderProps) 
 
   // 마우스 이동 추적
   useEffect(() => {
+    // 브라우저 환경에서만 실행
+    if (typeof window === 'undefined') return;
+    
     if (config.trackMouseMoving !== true) {
       return;
     }
@@ -159,6 +206,9 @@ export const EventFlowProvider = ({ config, children }: EventFlowProviderProps) 
 
   // 스크롤 추적
   useEffect(() => {
+    // 브라우저 환경에서만 실행
+    if (typeof window === 'undefined') return;
+    
     if (config.trackScroll !== true) {
       return;
     }

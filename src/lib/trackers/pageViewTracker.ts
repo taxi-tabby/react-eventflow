@@ -7,15 +7,20 @@ export const createPageViewEvent = (
   url?: string,
   title?: string
 ): PageViewEvent => {
+  // 브라우저 환경 체크
+  if (typeof window === 'undefined') {
+    throw new Error('PageView tracking is only available in browser environment');
+  }
+
   return {
     type: 'pageview',
     timestamp: Date.now(),
     fingerprint: '', // Provider에서 설정됨
     payload: {
       url: url || window.location.href,
-      title: title || document.title,
-      referrer: document.referrer,
-      userAgent: navigator.userAgent,
+      title: title || (typeof document !== 'undefined' ? document.title : ''),
+      referrer: typeof document !== 'undefined' ? document.referrer : '',
+      userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : '',
     },
   };
 };
@@ -28,6 +33,10 @@ export const trackPageView = (
   url?: string,
   title?: string
 ) => {
-  const event = createPageViewEvent(url, title);
-  sendEvent(event);
+  try {
+    const event = createPageViewEvent(url, title);
+    sendEvent(event);
+  } catch (error) {
+    console.warn('[EventFlow] PageView tracking error:', error);
+  }
 };
