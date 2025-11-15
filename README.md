@@ -51,6 +51,7 @@ trackReferral 기능은 불안정합니다! 잘 동작한다고 생각한다면 
 - ✅ Scroll tracking
 - ✅ Event batching support
 - ✅ Browser fingerprinting for user identification
+- ✅ HMAC signature verification for server-side validation
 - ✅ Lightweight with minimal dependencies
 
 ## Installation
@@ -158,6 +159,18 @@ interface EventFlowConfig {
   
   /** Batching interval in ms (default: 2000) */
   batchInterval?: number;
+  
+  /** Enable HMAC signature (default: false) */
+  enableHmac?: boolean;
+  
+  /** HMAC secret key (required when enableHmac is true) */
+  hmacSecretKey?: string;
+  
+  /** HMAC hash algorithm (default: 'sha256') */
+  hmacAlgorithm?: 'sha256' | 'sha512' | 'sha384' | 'sha1';
+  
+  /** HMAC output encoding (default: 'hex') */
+  hmacEncoding?: 'hex' | 'base64' | 'base64url';
 }
 ```
 
@@ -366,6 +379,114 @@ This fingerprint is:
 - Persistent across sessions
 - Privacy-friendly (no personal data)
 
+### HMAC Signature Verification
+
+Enable HMAC signatures to verify events on your server and prevent tampering:
+
+```tsx
+<EventFlowProvider
+  config={{
+    onEvent: handleEvents,
+    enableHmac: true,
+    hmacSecretKey: process.env.REACT_APP_HMAC_SECRET, // Keep this secret!
+    hmacAlgorithm: 'sha256',    // Default: 'sha256' (options: 'sha256', 'sha512', 'sha384', 'sha1')
+    hmacEncoding: 'hex',        // Default: 'hex' (options: 'hex', 'base64', 'base64url')
+  }}
+>
+  <App />
+</EventFlowProvider>
+```
+
+> **⚠️ Security Warning**: Client-side environment variables (`REACT_APP_*`, `NEXT_PUBLIC_*`) are embedded in your bundle at build time and can be viewed by anyone!
+>
+> **Recommended Approach**: Implement a proper key management infrastructure on your backend for maximum security and effectiveness.
+>
+> Instead of embedding HMAC keys directly in your client bundle, your backend should:
+> - Generate and distribute session-specific temporary keys to authenticated clients
+> - Derive temporary keys from a master secret that never leaves the server
+> - Implement automatic key rotation and expiration (e.g., 1-hour TTL)
+> - Store session keys in a secure backend store (Redis, database, or in-memory with proper session management)
+>
+> This approach follows [Public Key Infrastructure (PKI)](https://en.wikipedia.org/wiki/Public_key_infrastructure) principles, where:
+> - The master key remains on the server and is never exposed
+> - Each client session receives a unique derived key
+> - Compromised keys have limited scope and impact
+> - Keys can be revoked and rotated without affecting all users
+>
+> **Benefits:**
+> - ✅ Master key stays on server only (never exposed)
+> - ✅ Different key per session (minimizes impact if key is compromised)
+> - ✅ Automatic key expiration and rotation
+> - ✅ Can integrate with user authentication
+> - ✅ Centralized key management and audit capabilities
+> - ✅ Compliance with security best practices
+
+When HMAC is enabled, events include a signature:
+
+```typescript
+// Single event
+{
+  type: 'pageview',
+  timestamp: 1699999999999,
+  fingerprint: 'abc123def456',
+  hmac: 'a1b2c3d4e5f6...', // HMAC signature of fingerprint
+  payload: { url: '/home' }
+}
+
+// Batched events
+{
+  fingerprint: 'abc123def456',
+  hmac: 'a1b2c3d4e5f6...', // HMAC signature of fingerprint
+  events: [...]
+}
+```
+
+**Server-side verification example (Node.js):**
+
+```typescript
+import crypto from 'crypto';
+
+function verifyEventHmac(event: EventData, secretKey: string): boolean {
+  const { fingerprint, hmac } = event;
+  
+  const expectedHmac = crypto
+    .createHmac('sha256', secretKey)
+    .update(fingerprint)
+    .digest('hex');
+  
+  // Timing-safe comparison
+  return crypto.timingSafeEqual(
+    Buffer.from(hmac),
+    Buffer.from(expectedHmac)
+  );
+}
+
+// In your API handler
+app.post('/api/events', (req, res) => {
+  const event = req.body;
+  
+  if (!verifyEventHmac(event, process.env.HMAC_SECRET)) {
+    return res.status(401).json({ error: 'Invalid signature' });
+  }
+  
+  // Process valid event
+  // ...
+});
+```
+
+**Why use HMAC?**
+- Prevents event tampering - ensures data integrity
+- Validates that events come from your application
+- Simple server-side verification
+- Cryptographically secure using industry-standard algorithms
+
+**Best Practices:**
+- Use `sha256` or `sha512` algorithm for best security
+- Keep your `hmacSecretKey` secret and never expose it in client code
+- Use environment variables to store the secret key
+- The same secret key must be used on both client and server
+- Use `hex` encoding for compatibility, `base64url` for shorter signatures
+
 
 ## Eaxample
 `next.js`
@@ -395,11 +516,17 @@ export function EventFlowProvider({ children }: EventFlowWrapperProps) {
         mouseMovingThrottle: 1000,
         scrollThrottle: 1000,
 
+        // HMAC signature for server verification
+        enableHmac: true,
+        hmacSecretKey: process.env.NEXT_PUBLIC_HMAC_SECRET!,
+        hmacAlgorithm: 'sha256',
+        hmacEncoding: 'hex',
+
         debug: false,
         onEvent: async (event) => {
           // Check if it's a batched event
           if ('events' in event) {
-            // Batched events: { fingerprint: string, events: Array }
+            // Batched events: { fingerprint: string, hmac: string, events: Array }
             console.log('Batch received:', event.fingerprint, event.events.length, 'events');
             // Send batched events to your backend
             await fetch('/api/events/batch', {
@@ -408,7 +535,7 @@ export function EventFlowProvider({ children }: EventFlowWrapperProps) {
               body: JSON.stringify(event),
             });
           } else {
-            // Single event: { fingerprint: string, type: string, timestamp: number, payload: any }
+            // Single event: { fingerprint: string, hmac: string, type: string, timestamp: number, payload: any }
             console.log('Single event:', event.fingerprint, event.type);
             await fetch('/api/events', {
               method: 'POST',

@@ -1,4 +1,5 @@
 import type { EventData, EventCallback, BatchedEvents, BatchEventData } from '../../types';
+import { generateFingerprintHmac, type HmacOptions } from '../utils/hmac';
 
 /**
  * 이벤트 배칭 관리 클래스
@@ -9,15 +10,18 @@ export class EventBatcher {
   private readonly batchInterval: number;
   private readonly onFlush: EventCallback;
   private readonly debug: boolean;
+  private readonly hmacOptions?: HmacOptions;
 
   constructor(
     onFlush: EventCallback,
     batchInterval: number = 2000,
-    debug: boolean = false
+    debug: boolean = false,
+    hmacOptions?: HmacOptions
   ) {
     this.onFlush = onFlush;
     this.batchInterval = batchInterval;
     this.debug = debug;
+    this.hmacOptions = hmacOptions;
   }
 
   /**
@@ -68,6 +72,15 @@ export class EventBatcher {
       fingerprint,
       events: batchEvents,
     };
+
+    // HMAC 서명 추가
+    if (this.hmacOptions) {
+      batchedEvents.hmac = generateFingerprintHmac(fingerprint, this.hmacOptions);
+      
+      if (this.debug) {
+        console.log('[EventBatcher] HMAC signature added to batch');
+      }
+    }
 
     this.onFlush(batchedEvents);
   }

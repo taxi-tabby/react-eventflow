@@ -10,6 +10,8 @@ export interface EventData {
   fingerprint: string;
   /** 이벤트 추가 데이터 */
   payload?: Record<string, any>;
+  /** HMAC 서명 (enableHmac이 true일 때만 포함) */
+  hmac?: string;
 }
 
 /**
@@ -32,6 +34,8 @@ export interface BatchedEvents {
   fingerprint: string;
   /** 이벤트 배열 */
   events: BatchEventData[];
+  /** HMAC 서명 (enableHmac이 true일 때만 포함) */
+  hmac?: string;
 }
 
 /**
@@ -204,6 +208,18 @@ export interface EventFlowConfig {
   
   /** 배칭 간격(ms) - enableBatching이 true일 때만 적용 (기본: 1000) */
   batchInterval?: number;
+  
+  /** HMAC 서명 활성화 (기본: false) */
+  enableHmac?: boolean;
+  
+  /** HMAC 비밀 키 - enableHmac이 true일 때 필수 */
+  hmacSecretKey?: string;
+  
+  /** HMAC 해시 알고리즘 (기본: 'sha256') */
+  hmacAlgorithm?: 'sha256' | 'sha512' | 'sha384' | 'sha1';
+  
+  /** HMAC 출력 인코딩 (기본: 'hex') */
+  hmacEncoding?: 'hex' | 'base64' | 'base64url';
 }
 
 /**

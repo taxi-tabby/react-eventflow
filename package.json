@@ -1,6 +1,6 @@
 {
   "name": "@taxi_tabby/react-eventflow",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "React event tracking library with Provider pattern for collecting user interactions and sending to backend",
   "main": "dist/index.js",
   "module": "dist/index.esm.js",
@@ -43,6 +43,7 @@
     "@rollup/plugin-commonjs": "^25.0.0",
     "@rollup/plugin-node-resolve": "^15.0.0",
     "@rollup/plugin-typescript": "^11.0.0",
+    "@types/node": "^20.0.0",
     "@types/react": "^18.0.0",
     "@types/react-dom": "^18.0.0",
     "@typescript-eslint/eslint-plugin": "^6.0.0",

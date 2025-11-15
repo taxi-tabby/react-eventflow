@@ -10,7 +10,7 @@ import {
   setupScrollTracking,
   trackReferral
 } from './trackers';
-import { debugLog } from './utils';
+import { debugLog, generateFingerprintHmac, type HmacOptions } from './utils';
 
 /**
  * EventFlow Context
@@ -44,6 +44,15 @@ export const EventFlowProvider = ({ config, children }: EventFlowProviderProps) 
   // EventBatcher 인스턴스
   const eventBatcherRef = useRef<EventBatcher | null>(null);
 
+  // HMAC 옵션 생성
+  const hmacOptions: HmacOptions | undefined = config.enableHmac && config.hmacSecretKey
+    ? {
+        secretKey: config.hmacSecretKey,
+        algorithm: config.hmacAlgorithm || 'sha256',
+        encoding: config.hmacEncoding || 'hex',
+      }
+    : undefined;
+
   // Fingerprint 초기화
   useEffect(() => {
     const initFingerprint = async () => {
@@ -61,6 +70,14 @@ export const EventFlowProvider = ({ config, children }: EventFlowProviderProps) 
               ...event,
               fingerprint: fingerPrintValueRef.current!,
             };
+
+            // HMAC 서명 추가
+            if (hmacOptions) {
+              eventWithFingerprint.hmac = generateFingerprintHmac(
+                fingerPrintValueRef.current!,
+                hmacOptions
+              );
+            }
             
             if (config.enableBatching && eventBatcherRef.current) {
               eventBatcherRef.current.addEvent(eventWithFingerprint);
@@ -76,7 +93,7 @@ export const EventFlowProvider = ({ config, children }: EventFlowProviderProps) 
       }
     };
     initFingerprint();
-  }, [config.debug, config.enableBatching, config.onEvent]);
+  }, [config.debug, config.enableBatching, config.onEvent, hmacOptions]);
 
   // EventBatcher 초기화
   useEffect(() => {
@@ -84,7 +101,8 @@ export const EventFlowProvider = ({ config, children }: EventFlowProviderProps) 
       eventBatcherRef.current = new EventBatcher(
         config.onEvent,
         config.batchInterval || 2000,
-        config.debug || false
+        config.debug || false,
+        hmacOptions
       );
 
       debugLog(config.debug || false, 'EventBatcher initialized');
@@ -96,7 +114,7 @@ export const EventFlowProvider = ({ config, children }: EventFlowProviderProps) 
         eventBatcherRef.current.clear();
       }
     };
-  }, [config.enableBatching, config.batchInterval, config.onEvent, config.debug]);
+  }, [config.enableBatching, config.batchInterval, config.onEvent, config.debug, hmacOptions]);
 
   // 이벤트 전송 로직
   const sendEvent = (event: EventData) => {
@@ -112,6 +130,15 @@ export const EventFlowProvider = ({ config, children }: EventFlowProviderProps) 
       ...event,
       fingerprint: fingerPrintValueRef.current,
     };
+
+    // HMAC 서명 추가
+    if (hmacOptions) {
+      eventWithFingerprint.hmac = generateFingerprintHmac(
+        fingerPrintValueRef.current,
+        hmacOptions
+      );
+      debugLog(config.debug || false, 'HMAC signature added to event');
+    }
 
     debugLog(config.debug || false, 'Event:', eventWithFingerprint);
 
