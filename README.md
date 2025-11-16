@@ -429,17 +429,19 @@ When HMAC is enabled, events include a signature:
   type: 'pageview',
   timestamp: 1699999999999,
   fingerprint: 'abc123def456',
-  hmac: 'a1b2c3d4e5f6...', // HMAC signature of fingerprint
+  hmac: 'a1b2c3d4e5f6...', // HMAC signature of entire event data
   payload: { url: '/home' }
 }
 
 // Batched events
 {
   fingerprint: 'abc123def456',
-  hmac: 'a1b2c3d4e5f6...', // HMAC signature of fingerprint
+  hmac: 'a1b2c3d4e5f6...', // HMAC signature of entire batch data
   events: [...]
 }
 ```
+
+The HMAC signature covers the entire event data (type, timestamp, fingerprint, and payload) to ensure complete data integrity.
 
 **Server-side verification example (Node.js):**
 
@@ -447,14 +449,35 @@ When HMAC is enabled, events include a signature:
 import crypto from 'crypto';
 
 function verifyEventHmac(event: EventData, secretKey: string): boolean {
-  const { fingerprint, hmac } = event;
+  const { hmac, ...eventData } = event;
+  
+  // Create normalized JSON string from event data (excluding hmac)
+  const normalizedData = JSON.stringify(eventData);
   
   const expectedHmac = crypto
     .createHmac('sha256', secretKey)
-    .update(fingerprint)
+    .update(normalizedData)
     .digest('hex');
   
   // Timing-safe comparison
+  return crypto.timingSafeEqual(
+    Buffer.from(hmac),
+    Buffer.from(expectedHmac)
+  );
+}
+
+// For batched events
+function verifyBatchHmac(batch: BatchedEvents, secretKey: string): boolean {
+  const { hmac, ...batchData } = batch;
+  
+  // Create normalized JSON string from batch data (excluding hmac)
+  const normalizedData = JSON.stringify(batchData);
+  
+  const expectedHmac = crypto
+    .createHmac('sha256', secretKey)
+    .update(normalizedData)
+    .digest('hex');
+  
   return crypto.timingSafeEqual(
     Buffer.from(hmac),
     Buffer.from(expectedHmac)
@@ -475,8 +498,9 @@ app.post('/api/events', (req, res) => {
 ```
 
 **Why use HMAC?**
-- Prevents event tampering - ensures data integrity
+- Prevents event tampering - ensures complete data integrity of type, timestamp, fingerprint, and payload
 - Validates that events come from your application
+- Detects any modifications to event data during transmission
 - Simple server-side verification
 - Cryptographically secure using industry-standard algorithms
 

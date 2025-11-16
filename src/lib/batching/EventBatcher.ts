@@ -1,5 +1,5 @@
 import type { EventData, EventCallback, BatchedEvents, BatchEventData } from '../../types';
-import { generateFingerprintHmac, type HmacOptions } from '../utils/hmac';
+import { generateBatchHmac, type HmacOptions } from '../utils/hmac';
 
 /**
  * 이벤트 배칭 관리 클래스
@@ -75,7 +75,7 @@ export class EventBatcher {
 
     // HMAC 서명 추가
     if (this.hmacOptions) {
-      batchedEvents.hmac = generateFingerprintHmac(fingerprint, this.hmacOptions);
+      batchedEvents.hmac = generateBatchHmac(batchedEvents, this.hmacOptions);
       
       if (this.debug) {
         console.log('[EventBatcher] HMAC signature added to batch');

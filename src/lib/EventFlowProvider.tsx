@@ -10,7 +10,7 @@ import {
   setupScrollTracking,
   trackReferral
 } from './trackers';
-import { debugLog, generateFingerprintHmac, type HmacOptions } from './utils';
+import { debugLog, generateEventHmac, type HmacOptions } from './utils';
 
 /**
  * EventFlow Context
@@ -73,8 +73,8 @@ export const EventFlowProvider = ({ config, children }: EventFlowProviderProps) 
 
             // HMAC 서명 추가
             if (hmacOptions) {
-              eventWithFingerprint.hmac = generateFingerprintHmac(
-                fingerPrintValueRef.current!,
+              eventWithFingerprint.hmac = generateEventHmac(
+                eventWithFingerprint,
                 hmacOptions
               );
             }
@@ -133,8 +133,8 @@ export const EventFlowProvider = ({ config, children }: EventFlowProviderProps) 
 
     // HMAC 서명 추가
     if (hmacOptions) {
-      eventWithFingerprint.hmac = generateFingerprintHmac(
-        fingerPrintValueRef.current,
+      eventWithFingerprint.hmac = generateEventHmac(
+        eventWithFingerprint,
         hmacOptions
       );
       debugLog(config.debug || false, 'HMAC signature added to event');
